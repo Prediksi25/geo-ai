@@ -1,0 +1,96 @@
+<!DOCTYPE html><html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Geo AI – Analisa Patahan & Minyak</title>  <!-- Leaflet -->  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>  <style>
+    body {
+      margin: 0;
+      padding: 10px;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f2f2f2;
+    }
+    h3 {
+      text-align: center;
+      margin: 5px 0 10px 0;
+    }
+    #map {
+      height: 65vh;
+      border-radius: 10px;
+    }
+    button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: #1976d2;
+      color: white;
+    }
+    #result {
+      margin-top: 10px;
+      padding: 10px;
+      background: white;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+  </style></head>
+<body><h3>Geo AI – Analisa Patahan & Potensi Minyak</h3><div id="map"></div><button onclick="analyze()">Analisa AI</button>
+
+<div id="result">Klik peta satelit untuk memilih lokasi</div><script>
+  // Inisialisasi peta (Sumsel & Jambi)
+  var map = L.map('map').setView([-2.9, 103.8], 7);
+
+  // === PETA SATELIT (ESRI) ===
+  L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {
+      maxZoom: 18,
+      attribution: '© Esri'
+    }
+  ).addTo(map);
+
+  let marker = null;
+  let selectedPoint = null;
+
+  // Klik peta → ambil GPS
+  map.on('click', function(e) {
+    if (marker) map.removeLayer(marker);
+    marker = L.marker(e.latlng).addTo(map);
+    selectedPoint = e.latlng;
+
+    document.getElementById('result').innerHTML =
+      `Lokasi dipilih:<br>Lat: ${e.latlng.lat.toFixed(5)}<br>Lon: ${e.latlng.lng.toFixed(5)}`;
+  });
+
+  // Panggil AI Backend
+  function analyze() {
+    if (!selectedPoint) {
+      alert('Silakan klik lokasi di peta terlebih dahulu');
+      return;
+    }
+
+    fetch('https://GANTI_DENGAN_URL_BACKEND/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lat: selectedPoint.lat,
+        lon: selectedPoint.lng
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('result').innerHTML =
+        `<b>Wilayah:</b> ${data.region}<br>
+         <b>Indikasi Patahan:</b> ${data.fault_indication}<br>
+         <b>Potensi Minyak:</b> ${data.oil_potential}<br>
+         <b>Confidence AI:</b> ${data.confidence}<br>
+         <i>${data.note}</i>`;
+    })
+    .catch(() => {
+      document.getElementById('result').innerHTML = 'Gagal menghubungi AI';
+    });
+  }
+</script></body>
+</html>
